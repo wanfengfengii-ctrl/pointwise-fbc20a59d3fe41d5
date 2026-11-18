@@ -131,6 +131,39 @@ class ReissueTests(ArchiveCase):
         self.assertEqual(reissue_report(self.db, new_key, ('A', 'B', 'C')).rows, (ReportRow('crew', 3, 3, 600),))
         self.assertEqual(self.report_counts(), (2, 2))
 
+    def test_single_section_from_pairs(self):
+        key = self.stage_rows(PAIR_ROWS)
+        seal(self.db, key, PAIR_SCOPES)
+        expected = direct_totals(tuple(iter_source_rows(self.db, key)), {'A'})
+        self.assertEqual(expected, (ReportRow('crew', 1, 1, 4),))
+        expire(self.db, key, DUE)
+        result = reissue_report(self.db, key, ['A'])
+        self.assertEqual(result.rows, expected)
+        self.assertEqual(read(self.db, result.header.number).rows, expected)
+
+    def test_fractional_net_zero_amount(self):
+        rows = (
+            SourceRow('a', 'A', 'crew', 4), SourceRow('b', 'B', 'crew', -4),
+            SourceRow('c', 'C', 'crew', 0),
+        )
+        key = self.stage_rows(rows)
+        seal(self.db, key, PAIR_SCOPES)
+        expected = direct_totals(tuple(iter_source_rows(self.db, key)), {'A', 'B', 'C'})
+        self.assertEqual(expected, (ReportRow('crew', 3, 3, 0),))
+        expire(self.db, key, DUE)
+        result = reissue_report(self.db, key, {'C', 'A', 'B'})
+        self.assertEqual(result.rows, expected)
+
+    def test_not_exactly_expressible(self):
+        key = self.stage_rows(PAIR_ROWS)
+        seal(self.db, key, [('A', 'B')])
+        expire(self.db, key, DUE)
+        for target in (('A',), ('B',), ('A', 'B', 'C')):
+            with self.subTest(target=target):
+                with self.assertRaises(UnrecoverableTarget):
+                    reissue_report(self.db, key, target)
+        self.assertEqual(self.report_counts(), (0, 0))
+
     def test_invalid_request(self):
         frozen = self.stage_rows(PAIR_ROWS)
         seal(self.db, frozen, PAIR_SCOPES)

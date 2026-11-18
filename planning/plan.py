@@ -1,5 +1,6 @@
 from collections.abc import Iterable
 from dataclasses import dataclass
+from fractions import Fraction
 from sqlite3 import Connection
 
 from intake.identity import RevisionKey
@@ -16,6 +17,7 @@ class UnrecoverableTarget(ValueError):
 @dataclass(frozen=True, slots=True)
 class RecoveryTerm:
     rollup: RollupRef
+    weight: Fraction
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,7 +31,9 @@ def build_plan(
 ) -> RecoveryPlan:
     target = resolve_target(connection, key, sections)
     inventory = load_inventory(connection, target)
-    rollups = resolve_coverage(target, inventory)
-    if rollups is None:
+    terms = resolve_coverage(target, inventory)
+    if terms is None:
         raise UnrecoverableTarget(f"cannot recover {target.sections!r} from {key}")
-    return RecoveryPlan(target, tuple(RecoveryTerm(ref) for ref in rollups))
+    return RecoveryPlan(
+        target, tuple(RecoveryTerm(ref, weight) for ref, weight in terms)
+    )
