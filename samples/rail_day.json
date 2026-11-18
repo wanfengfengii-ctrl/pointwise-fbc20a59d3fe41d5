@@ -1,0 +1,18 @@
+{
+  "batch_day": "2026-10-01",
+  "first_revision": "r1",
+  "correction_revision": "r2",
+  "expiry_day": "2026-10-08",
+  "rows": [
+    {"row_id": "a", "section": "A", "crew": "甲班", "amount_cents": 4},
+    {"row_id": "b", "section": "B", "crew": "甲班", "amount_cents": 10},
+    {"row_id": "c", "section": "C", "crew": "甲班", "amount_cents": 16}
+  ],
+  "coverages": [["A", "B"], ["A", "C"], ["B", "C"]],
+  "target": ["C", "B", "A"],
+  "correction_rows": [
+    {"row_id": "a", "section": "A", "crew": "甲班", "amount_cents": 40},
+    {"row_id": "b", "section": "B", "crew": "甲班", "amount_cents": 10},
+    {"row_id": "c", "section": "C", "crew": "甲班", "amount_cents": 16}
+  ]
+}
